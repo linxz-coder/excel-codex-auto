@@ -14,6 +14,20 @@ def sanitize_filename(name: str) -> str:
     return "".join(out).strip() or "sheet"
 
 
+def export_workbook_to_csvs(xlsx_path: Path, out_dir: Path) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    wb = load_workbook(xlsx_path, data_only=True)
+    for ws in wb.worksheets:
+        csv_name = f"{sanitize_filename(ws.title)}.csv"
+        csv_path = out_dir / csv_name
+        with csv_path.open("w", newline="", encoding="utf-8-sig") as f:
+            writer = csv.writer(f)
+            for row in ws.iter_rows(values_only=True):
+                writer.writerow(["" if v is None else v for v in row])
+        print(csv_path)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Export each worksheet in an .xlsx file to CSV.")
     parser.add_argument(
@@ -30,17 +44,7 @@ def main() -> None:
 
     xlsx_path = Path(args.xlsx).expanduser().resolve()
     out_dir = Path(args.out_dir).expanduser().resolve()
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    wb = load_workbook(xlsx_path, data_only=True)
-    for ws in wb.worksheets:
-        csv_name = f"{sanitize_filename(ws.title)}.csv"
-        csv_path = out_dir / csv_name
-        with csv_path.open("w", newline="", encoding="utf-8-sig") as f:
-            writer = csv.writer(f)
-            for row in ws.iter_rows(values_only=True):
-                writer.writerow(["" if v is None else v for v in row])
-        print(csv_path)
+    export_workbook_to_csvs(xlsx_path, out_dir)
 
 
 if __name__ == "__main__":
